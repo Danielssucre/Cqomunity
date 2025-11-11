@@ -1,7 +1,5 @@
 streamlit
 passlib
 pandas
-sqlalchemy
-psycopg2-binary
 bcrypt
 

@@ -85,7 +85,8 @@ def setup_database():
     cursor.execute("SELECT * FROM users WHERE username = ?", (ADMIN_USER_DEFAULT,))
     admin = cursor.fetchone()
     if not admin:
-        admin_pass_hash = pwd_context.hash(ADMIN_PASS_DEFAULT)
+        # Truncar la contraseña a 72 caracteres para bcrypt
+        admin_pass_hash = pwd_context.hash(ADMIN_PASS_DEFAULT[:72])
         cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                        (ADMIN_USER_DEFAULT, admin_pass_hash, "admin"))
     # --- FIN DE SECCIÓN MODIFICADA ---

@@ -90,8 +90,9 @@ def setup_database():
     cursor.execute("SELECT * FROM users WHERE username = ?", (ADMIN_USER_DEFAULT,))
     admin = cursor.fetchone()
     if not admin:
-        # Truncar la contraseña a 72 caracteres para bcrypt
-        admin_pass_hash = pwd_context.hash(ADMIN_PASS_DEFAULT[:72])
+        # Truncar la contraseña a 72 bytes para bcrypt
+        admin_pass_bytes = ADMIN_PASS_DEFAULT.encode('utf-8')[:72]
+        admin_pass_hash = pwd_context.hash(admin_pass_bytes)
         cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                        (ADMIN_USER_DEFAULT, admin_pass_hash, "admin"))
     # --- FIN DE SECCIÓN MODIFICADA ---
@@ -559,7 +560,8 @@ def show_change_password_page():
             else:
                 # Las contraseñas coinciden, proceder a hashear y actualizar
                 try:
-                    new_password_hash = pwd_context.hash(password_new)
+                    password_new_bytes = password_new.encode('utf-8')[:72]
+                    new_password_hash = pwd_context.hash(password_new_bytes)
                     conn = get_db_conn()
                     cursor = conn.cursor()
                     

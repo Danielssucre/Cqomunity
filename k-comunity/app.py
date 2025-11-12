@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # Contexto para hashear contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 DB_FILE = "/opt/render/data/prisma_srs.db"
 
 # --- FUNCIONES DE BASE DE DATOS (SQLite) ---

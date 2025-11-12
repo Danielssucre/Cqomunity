@@ -2,4 +2,3 @@ streamlit
 passlib
 pandas
 argon2-cffi
-bcrypt

@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # Contexto para hashear contraseñas
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 DB_FILE = "/opt/render/data/prisma_srs.db"
 
 # --- FUNCIONES DE BASE DE DATOS (SQLite) ---
@@ -90,9 +90,10 @@ def setup_database():
     cursor.execute("SELECT * FROM users WHERE username = ?", (ADMIN_USER_DEFAULT,))
     admin = cursor.fetchone()
     if not admin:
-        # Truncar la contraseña a 72 bytes para bcrypt
-        admin_pass_bytes = ADMIN_PASS_DEFAULT.encode('utf-8')[:72]
-        admin_pass_hash = pwd_context.hash(admin_pass_bytes)
+        admin_pass_bytes = ADMIN_PASS_DEFAULT.encode('utf-8')
+        # Truncamos explícitamente la contraseña a 72 bytes para cumplir
+        # con la limitación del algoritmo bcrypt.
+        admin_pass_hash = pwd_context.hash(admin_pass_bytes[:72])
         cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                        (ADMIN_USER_DEFAULT, admin_pass_hash, "admin"))
     # --- FIN DE SECCIÓN MODIFICADA ---
@@ -176,7 +177,7 @@ def show_login_page():
                 conn = get_db_conn()
                 cursor = conn.cursor()
                 try:
-                    hashed_pass = pwd_context.hash(new_password)
+                    hashed_pass = pwd_context.hash(new_password.encode('utf-8')[:72])
                     cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                                    (new_username, hashed_pass, 'user'))
                     conn.commit()

@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import datetime
+import os
 from passlib.context import CryptContext  # Para hashing de contraseñas
 
 # --- CONFIGURACIÓN DE PÁGINA Y SEGURIDAD ---
@@ -19,6 +20,10 @@ DB_FILE = "/opt/render/data/prisma_srs.db"
 
 def get_db_conn():
     """Establece conexión con la BD SQLite."""
+    # Asegurarse de que el directorio de la base de datos exista
+    db_dir = os.path.dirname(DB_FILE)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row # Permite acceder a las columnas por nombre
     return conn

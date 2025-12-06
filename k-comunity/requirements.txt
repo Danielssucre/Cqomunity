@@ -1,6 +1,6 @@
 streamlit
-bcrypt
-pandas
-openpyxl
-altair
 passlib
+pandas
+argon2-cffi
+streamlit-autorefresh
+openpyxl

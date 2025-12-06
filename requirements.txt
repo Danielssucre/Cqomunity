@@ -2,4 +2,4 @@ streamlit
 passlib
 bcrypt<5.0
 pandas
-argon2-cffi
+argon2-cffiopenpyxl

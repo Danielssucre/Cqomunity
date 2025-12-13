@@ -24,67 +24,25 @@ st.set_page_config(
 
 # Contexto para hashear contraseñas
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-# --- CONFIGURACIÓN DE RUTAS (Local vs Render) ---
-# Si existe la carpeta de Render, úsala. Si no, usa la carpeta local.
-if os.path.exists("/opt/render/data"):
-    DB_FILE = "/opt/render/data/prisma_srs.db"
+# ==========================================
+# ⚙️ CONFIGURACIÓN DE BASE DE DATOS (PRODUCCIÓN)
+# ==========================================
+# Ruta EXACTA donde Render guarda tu disco persistente (La que acabamos de arreglar)
+DB_PATH = "/opt/render/data/prisma_srs.db"
+
+# Lógica de seguridad: Si no estamos en el servidor de Render, usar archivo local
+if not os.path.exists(DB_PATH):
+    DB_PATH = "prisma_srs.db"
+    print(f"⚠️ MODO LOCAL: Usando base de datos en {DB_PATH}")
 else:
-    DB_FILE = "prisma_srs.db"
-
-BACKUP_DIR = os.path.join(os.path.dirname(DB_FILE) or '.', 'backups')
-
-# --- FUNCIONES DE RESILIENCIA Y BASE DE DATOS ---
-
-def run_auto_backup():
-    """Crea un respaldo de la BD con timestamp y rota los 5 más recientes."""
-    try:
-        if not os.path.exists(BACKUP_DIR):
-            os.makedirs(BACKUP_DIR)
-            st.toast("Directorio de respaldos creado.")
-
-        # Generar nombre de archivo con timestamp
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-        backup_file = os.path.join(BACKUP_DIR, f"backup_{timestamp}.db")
-
-        # Copiar el archivo de la base de datos
-        shutil.copy2(DB_FILE, backup_file)
-
-        # Gestión de espacio: rotación de respaldos
-        backups = sorted(
-            [os.path.join(BACKUP_DIR, f) for f in os.listdir(BACKUP_DIR) if f.endswith('.db')],
-            key=os.path.getmtime
-        )
-        
-        if len(backups) > 5:
-            os.remove(backups[0]) # Borrar el más antiguo
-            print(f"INFO: Respaldo antiguo '{backups[0]}' eliminado.")
-
-        print(f"INFO: Respaldo de BD creado en '{backup_file}'.")
-
-    except Exception as e:
-        print(f"ERROR en Auto-Backup: {e}")
-
+    print(f"✅ MODO PRODUCCIÓN: Conectado al Disco Persistente en {DB_PATH}")
 
 def get_db_conn():
-    """Establece conexión con la BD SQLite, asegurando que el directorio exista."""
-    # Obtener el directorio de la base de datos
-    db_dir = os.path.dirname(DB_FILE)
-    
-    # CORRECCIÓN: Solo intentar crear el directorio si db_dir NO está vacío
-    if db_dir and not os.path.exists(db_dir):
-        try:
-            os.makedirs(db_dir)
-        except OSError as e:
-            st.error(f"Error al crear directorio de base de datos: {e}")
-            st.stop()
-            
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        conn.row_factory = sqlite3.Row 
-        return conn
-    except sqlite3.Error as e:
-        st.error(f"Error de conexión a SQLite: {e}")
-        st.stop()
+    """Crea una conexión segura a la base de datos correcta."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+# ==========================================
 
 def get_ghost_profile():
     # Devuelve el diccionario del Usuario Fantasma (Referencia) o None.

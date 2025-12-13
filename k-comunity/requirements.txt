@@ -4,3 +4,4 @@ pandas
 argon2-cffi
 streamlit-autorefresh
 openpyxl
+plotly

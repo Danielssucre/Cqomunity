@@ -194,6 +194,10 @@ def delete_user_from_db(username):
         cursor.execute("DELETE FROM duels WHERE challenger_username = ? OR opponent_username = ?", (username, username))
         # Eliminar todo el progreso de estudio
         cursor.execute("DELETE FROM progress WHERE username = ?", (username,))
+        # Eliminar todos los votos emitidos por el usuario
+        cursor.execute("DELETE FROM question_votes WHERE user_username = ?", (username,))
+        # Eliminar el historial de actividad
+        cursor.execute("DELETE FROM activity_log WHERE username = ?", (username,))
 
         # 4. Preservación de Contenido (Transferir)
         # Actualizar el propietario de las preguntas para que pertenezcan al admin
@@ -2438,7 +2442,7 @@ def show_admin_panel():
     st.subheader("📦 Copia de Seguridad (Backup)")
 
     try:
-        with open(DB_FILE, "rb") as fp:
+        with open(DB_PATH, "rb") as fp:
             st.download_button(
                 label="Descargar Base de Datos (SQLite)",
                 data=fp,
@@ -2447,7 +2451,7 @@ def show_admin_panel():
             )
         st.info("Este archivo contiene todos los datos de usuarios y preguntas. Guárdalo en un lugar seguro.")
     except FileNotFoundError:
-        st.error(f"Error: No se encontró el archivo de la base de datos en la ruta: {DB_FILE}")
+        st.error(f"Error: No se encontró el archivo de la base de datos en la ruta: {DB_PATH}")
     except Exception as e:
         st.error(f"Ocurrió un error inesperado al leer el archivo de la base de datos: {e}")
     # --- FIN DE LA NUEVA SECCIÓN DE BACKUP ---
@@ -2549,6 +2553,39 @@ def show_change_password_page():
                 st.success("¡Contraseña actualizada con éxito!"); st.balloons()
             else:
                 st.error("Las contraseñas no coinciden o están vacías.")
+
+def run_auto_backup():
+    """Crea una copia de seguridad de la base de datos en la carpeta de backups."""
+    
+    # 1. Definir rutas
+    # Ruta de la base de datos original (producción o local)
+    source_db = DB_PATH
+    
+    # Directorio de backups (relativo a la ubicación de app.py)
+    backup_dir = "backups" 
+    
+    # Nombre del archivo de backup con la fecha actual
+    backup_filename = f"backup_prisma_srs_{datetime.date.today().strftime('%Y-%m-%d')}.db"
+    
+    # Ruta completa del destino
+    dest_db = os.path.join(backup_dir, backup_filename)
+    
+    try:
+        # 2. Asegurarse de que el directorio de backups existe
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # 3. Solo copiar si no existe ya un backup para hoy
+        if not os.path.exists(dest_db):
+            # Copiar el archivo
+            shutil.copy2(source_db, dest_db)
+            print(f"✅ Backup automático creado con éxito en: {dest_db}")
+        else:
+            print(f"ℹ️ El backup de hoy ya existe. No se necesita crear uno nuevo.")
+            
+    except FileNotFoundError:
+        print(f"❌ ERROR en backup: No se encontró la base de datos de origen en '{source_db}'.")
+    except Exception as e:
+        print(f"❌ ERROR inesperado durante el backup automático: {e}")
 
 # --- CONTROLADOR PRINCIPAL (MAIN) ---
 

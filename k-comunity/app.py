@@ -1081,15 +1081,24 @@ def render_question_card(question_id):
         st.caption(f"Detalle técnico: {e}")
         return True # Devuelve True para que show_evaluation_page pida la siguiente.
 
-    # --- LÓGICA DE SHUFFLE PERSISTENTE ---
-    # Generamos una key única para guardar el orden de esta pregunta específica
+    # --- LÓGICA DE ANCLAJE ESTÁTICO Y SHUFFLE ---
+    # 1. Anclaje: Asignar prefijos estáticos a las opciones originales
+    original_options_with_prefix = [f"[{chr(65+i)}] {op.strip()}" for i, op in enumerate(parsed_options)]
+    
+    # Identificar la respuesta correcta con su nuevo prefijo
+    correct_option_original_text = pregunta['correcta'].strip()
+    correct_option_with_prefix = ""
+    for i, op in enumerate(parsed_options):
+        if op.strip() == correct_option_original_text:
+            correct_option_with_prefix = original_options_with_prefix[i]
+            break
+
+    # 2. Mezcla (Shuffle) Persistente
     shuffle_key = f"shuffled_options_{question_id}"
-    # Si ya tenemos un orden guardado para esta pregunta, lo usamos (para evitar rebajar al interactuar)
     if shuffle_key in st.session_state:
         display_options = st.session_state[shuffle_key]
     else:
-        # Si es nueva, barajamos y guardamos
-        display_options = parsed_options.copy() # Copia para no alterar original si hiciera falta
+        display_options = original_options_with_prefix.copy()
         random.shuffle(display_options)
         st.session_state[shuffle_key] = display_options
     # -------------------------------------
@@ -1116,7 +1125,7 @@ def render_question_card(question_id):
         
         # Mostrar opciones con feedback visual
         for op in display_options:
-            if op == pregunta['correcta']:
+            if op == correct_option_with_prefix:
                 st.success(f"**{op} (Correcta)**")
             elif op == respuesta_usuario:
                 st.error(f"**{op} (Tu respuesta)**")
@@ -1163,7 +1172,7 @@ def render_question_card(question_id):
                 # --- LOG DE ÉXITO Y SRS ---
                 start_time = st.session_state.get(f"timer_start_{question_id}")
                 duration = (datetime.datetime.now() - start_time).total_seconds() if start_time else 0
-                is_correct = st.session_state.get(user_answer_key) == pregunta['correcta']
+                is_correct = st.session_state.get(user_answer_key) == correct_option_with_prefix
 
                 log_event(st.session_state.current_user, "answer_submitted", {
                     "question_id": question_id,
